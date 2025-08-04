@@ -1,0 +1,221 @@
+let statsChart = null;
+let gamesChart = null;
+let user = null;
+
+function saveUserData(userObj) {
+  localStorage.setItem('user', JSON.stringify(userObj));
+}
+function getUserData() {
+  const data = localStorage.getItem('user');
+  return data ? JSON.parse(data) : null;
+}
+function clearUserData() {
+  localStorage.removeItem('user');
+}
+
+// Auth button handlers
+document.getElementById('show-login').onclick = () => {
+  document.getElementById('auth-forms').style.display = 'block';
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('register-form').style.display = 'none';
+};
+document.getElementById('show-register').onclick = () => {
+  document.getElementById('auth-forms').style.display = 'block';
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('register-form').style.display = 'block';
+};
+
+// Register
+document.getElementById('register-form').onsubmit = e => {
+  e.preventDefault();
+  const username = document.getElementById('register-username').value.trim();
+  if (!username) return alert('Enter username');
+  user = {
+    username,
+    stats: { wins: 0, losses: 0, total: 0 },
+    games: []
+  };
+  saveUserData(user);
+  startApp(username);
+  document.getElementById('auth-forms').style.display = 'none';
+};
+
+// Login
+document.getElementById('login-form').onsubmit = e => {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const data = getUserData();
+  if (data && data.username === username) {
+    user = data;
+    startApp(username);
+    document.getElementById('auth-forms').style.display = 'none';
+  } else {
+    alert('User not found, please register.');
+  }
+};
+
+function startApp(username) {
+  document.getElementById('app').style.display = 'block';
+  document.querySelector('.header h1').innerText = `Welcome, ${username}`;
+  document.getElementById('auth-section').style.display = 'none';
+  showView('dashboard');
+  document.getElementById('user-name').innerText = username;
+  loadUserData();
+}
+
+// Nav view switching
+document.querySelectorAll('.nav button').forEach(btn => {
+  btn.onclick = () => {
+    showView(btn.dataset.view);
+  };
+});
+
+function showView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  const view = document.getElementById(viewId + '-view');
+  if (view) view.style.display = 'block';
+
+  if (viewId === 'dashboard') updateStatsChart();
+  else if (viewId === 'stats') updateGamesChart();
+}
+
+function loadUserData() {
+  if (user && user.stats) {
+    updateStatsChart();
+    updateGamesChart();
+  }
+}
+
+document.getElementById('logout').onclick = () => {
+  clearUserData();
+  location.reload();
+};
+
+document.getElementById('game-form').onsubmit = e => {
+  e.preventDefault();
+  const opponent = document.getElementById('opponent').value.trim();
+  const won = document.getElementById('won').value === 'true';
+  const gameType = document.getElementById('game-type').value;
+  const raceTo = parseInt(document.getElementById('race-to').value, 10);
+  const datetimeLocal = document.getElementById('game-datetime').value;
+  const timeZone = document.getElementById('time-zone').value;
+
+  if (!opponent || !datetimeLocal) {
+    alert('Please fill all fields.');
+    return;
+  }
+
+  const dateObj = new Date(datetimeLocal);
+  const isoString = dateObj.toISOString();
+
+  user.games.push({ opponent, won, gameType, raceTo, dateTime: isoString, timeZone });
+  if (won) user.stats.wins++;
+  else user.stats.losses++;
+  user.stats.total++;
+  saveUserData(user);
+  alert('Game recorded!');
+  loadUserData();
+  document.getElementById('game-form').reset();
+};
+
+function updateStatsChart() {
+  const ctx = document.getElementById('statsChart').getContext('2d');
+  if (statsChart) statsChart.destroy();
+  statsChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Wins', 'Losses'],
+      datasets: [{
+        data: [user.stats.wins, user.stats.losses],
+        backgroundColor: ['#4caf50', '#f44336']
+      }]
+    },
+    options: { responsive: true }
+  });
+}
+
+function updateGamesChart() {
+  const ctx = document.getElementById('gamesChart').getContext('2d');
+  if (gamesChart) gamesChart.destroy();
+  const total = user.stats.total;
+  const winPercent = total ? (user.stats.wins / total) * 100 : 0;
+  gamesChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Win %'],
+      datasets: [{
+        label: 'Winning Percentage',
+        data: [winPercent],
+        backgroundColor: ['#4caf50']
+      }]
+    },
+    options: {
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+}
+
+// Reset & Load buttons
+document.getElementById('reset-data').onclick = () => {
+  if (confirm('Are you sure you want to reset all records?')) {
+    user.stats = { wins: 0, losses: 0, total: 0 };
+    user.games = [];
+    saveUserData(user);
+    loadUserData();
+  }
+};
+document.getElementById('load-data').onclick = () => {
+  user = getUserData();
+  loadUserData();
+};
+
+// Find halls
+document.getElementById('find-halls').onclick = () => {
+  const input = document.getElementById('location-input').value.trim();
+  if (!input) return alert('Enter ZIP code or address');
+  geocodeLocation(input);
+};
+
+function geocodeLocation(input) {
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address: input }, (results, status) => {
+    if (status === 'OK' && results[0]) {
+      const location = results[0].geometry.location;
+      initMap(location);
+    } else {
+      alert('Geocode failed: ' + status);
+    }
+  });
+}
+
+let map;
+function initMap(center) {
+  if (!map) {
+    map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 14,
+      center: center
+    });
+  } else {
+    map.setCenter(center);
+  }
+  const service = new google.maps.places.PlacesService(map);
+  service.nearbySearch({ location: center, radius: 2000, keyword: 'pool hall' }, (results, status) => {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      results.forEach(place => {
+        new google.maps.Marker({
+          position: place.geometry.location,
+          map: map,
+          title: place.name
+        });
+      });
+    } else {
+      alert('Places search failed: ' + status);
+    }
+  });
+}
+
+if (getUserData()) {
+  user = getUserData();
+  startApp(user.username);
+  loadUserData();
+}
