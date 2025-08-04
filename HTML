@@ -1,0 +1,107 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pool Game Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places,visualization"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Pool Game Tracker</h1>
+      <div id="auth-section">
+        <button id="show-login">Login</button>
+        <button id="show-register">Register</button>
+      </div>
+    </header>
+
+    <div id="auth-forms" style="display:none;">
+      <form id="login-form" class="auth-form" style="display:none;">
+        <h3>Login</h3>
+        <input type="text" id="login-username" placeholder="Username" required />
+        <button type="submit">Login</button>
+      </form>
+      <form id="register-form" class="auth-form" style="display:none;">
+        <h3>Register</h3>
+        <input type="text" id="register-username" placeholder="Username" required />
+        <button type="submit">Register</button>
+      </form>
+    </div>
+
+    <div id="app" style="display:none;">
+      <button id="logout">Logout</button>
+      
+      <nav class="nav">
+        <button data-view="dashboard">Dashboard</button>
+        <button data-view="record">Record Game</button>
+        <button data-view="stats">Statistics</button>
+        <button data-view="location">Find Halls</button>
+      </nav>
+
+      <div class="view" id="dashboard-view">
+        <h2>Welcome, <span id="user-name"></span></h2>
+        <p>Your overall stats:</p>
+        <canvas id="statsChart" width="400" height="200"></canvas>
+        <div style="margin-top:20px;">
+          <button id="reset-data">Reset All Records</button>
+          <button id="load-data">Load Records</button>
+        </div>
+      </div>
+
+      <div class="view" id="record-view" style="display:none;">
+        <h2>Record Game Result</h2>
+        <form id="game-form">
+          <label>Opponent:</label>
+          <input type="text" id="opponent" required />
+
+          <label>Did You Win?</label>
+          <select id="won" required>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+
+          <label>Game Type:</label>
+          <select id="game-type" required>
+            <option value="8-ball">8-Ball</option>
+            <option value="9-ball">9-Ball</option>
+            <option value="straight-pool">Straight Pool</option>
+            <option value="other">Other</option>
+          </select>
+
+          <label>Race To (points/racks):</label>
+          <input type="number" id="race-to" min="1" required />
+
+          <label>Date & Time:</label>
+          <input type="datetime-local" id="game-datetime" required />
+
+          <label>Time Zone:</label>
+          <select id="time-zone" required>
+            <option value="America/New_York">Eastern (EST/EDT)</option>
+            <option value="America/Chicago">Central (CST/CDT)</option>
+            <option value="America/Denver">Mountain (MST/MDT)</option>
+            <option value="America/Los_Angeles">Pacific (PST/PDT)</option>
+          </select>
+
+          <button type="submit">Save Result</button>
+        </form>
+      </div>
+
+      <div class="view" id="stats-view" style="display:none;">
+        <h2>Your Game Statistics</h2>
+        <canvas id="gamesChart" width="400" height="200"></canvas>
+      </div>
+
+      <div class="view" id="location-view" style="display:none;">
+        <h2>Find Nearby Pool Halls</h2>
+        <input id="location-input" type="text" placeholder="Enter ZIP code or address" />
+        <button id="find-halls">Find Halls</button>
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
