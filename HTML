@@ -3,103 +3,88 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pool Game Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places,visualization"></script>
-  <link rel="stylesheet" href="styles.css" />
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
 </head>
 <body>
   <div class="container">
-    <header class="header">
-      <h1>Pool Game Tracker</h1>
-      <div id="auth-section">
-        <button id="show-login">Login</button>
-        <button id="show-register">Register</button>
-      </div>
-    </header>
+    <h1>🎱 Pool Game Tracker</h1>
 
-    <div id="auth-forms" style="display:none;">
-      <form id="login-form" class="auth-form" style="display:none;">
-        <h3>Login</h3>
-        <input type="text" id="login-username" placeholder="Username" required />
-        <button type="submit">Login</button>
-      </form>
-      <form id="register-form" class="auth-form" style="display:none;">
-        <h3>Register</h3>
-        <input type="text" id="register-username" placeholder="Username" required />
-        <button type="submit">Register</button>
-      </form>
+    <div id="auth">
+      <div id="register">
+        <h2>Register</h2>
+        <input id="reg-username" placeholder="Username" required/>
+        <input id="reg-email" type="email" placeholder="Email" required/>
+        <input id="reg-password" type="password" placeholder="Password" required/>
+        <input id="reg-security" placeholder="Your favorite cue color?" required/>
+        <button onclick="register()">Register</button>
+        <p><a onclick="toggleAuth('login')">Already have an account?</a></p>
+      </div>
+
+      <div id="login" style="display:none;">
+        <h2>Login</h2>
+        <input id="login-email" type="email" placeholder="Email" required/>
+        <input id="login-password" type="password" placeholder="Password" required/>
+        <button onclick="login()">Login</button>
+        <p><a onclick="toggleAuth('register')">Create Account</a></p>
+        <p><a onclick="showRecovery()">Forgot Login Info?</a></p>
+      </div>
+
+      <div id="recovery" style="display:none;">
+        <h2>Recover Account</h2>
+        <input id="recover-email" type="email" placeholder="Registered Email"/>
+        <input id="recover-security" placeholder="Favorite cue color?"/>
+        <button onclick="recover()">Recover</button>
+        <p><a onclick="toggleAuth('login')">Back to Login</a></p>
+      </div>
     </div>
 
     <div id="app" style="display:none;">
-      <button id="logout">Logout</button>
-      
       <nav class="nav">
         <button data-view="dashboard">Dashboard</button>
         <button data-view="record">Record Game</button>
         <button data-view="stats">Statistics</button>
-        <button data-view="location">Find Halls</button>
+        <button data-view="map">Find Pool Halls</button>
+        <button onclick="logout()">Logout</button>
       </nav>
 
-      <div class="view" id="dashboard-view">
-        <h2>Welcome, <span id="user-name"></span></h2>
-        <p>Your overall stats:</p>
-        <canvas id="statsChart" width="400" height="200"></canvas>
-        <div style="margin-top:20px;">
-          <button id="reset-data">Reset All Records</button>
-          <button id="load-data">Load Records</button>
-        </div>
-      </div>
+      <section id="dashboard-view" class="view">
+        <h2>Dashboard</h2>
+        <p id="user-welcome"></p>
+        <button id="reset-data">Reset All Records</button>
+        <button id="load-data">Reload Data</button>
+        <ul id="game-list"></ul>
+      </section>
 
-      <div class="view" id="record-view" style="display:none;">
-        <h2>Record Game Result</h2>
+      <section id="record-view" class="view" style="display:none;">
+        <h2>Record Game</h2>
         <form id="game-form">
-          <label>Opponent:</label>
-          <input type="text" id="opponent" required />
-
-          <label>Did You Win?</label>
+          <input id="opponent" placeholder="Opponent Name" required />
+          <input id="gameType" placeholder="Game Type" required />
+          <input id="raceTo" type="number" placeholder="Race To" required />
+          <input id="dateTime" type="datetime-local" required />
           <select id="won" required>
+            <option value="">Did you win?</option>
             <option value="true">Yes</option>
             <option value="false">No</option>
           </select>
-
-          <label>Game Type:</label>
-          <select id="game-type" required>
-            <option value="8-ball">8-Ball</option>
-            <option value="9-ball">9-Ball</option>
-            <option value="straight-pool">Straight Pool</option>
-            <option value="other">Other</option>
-          </select>
-
-          <label>Race To (points/racks):</label>
-          <input type="number" id="race-to" min="1" required />
-
-          <label>Date & Time:</label>
-          <input type="datetime-local" id="game-datetime" required />
-
-          <label>Time Zone:</label>
-          <select id="time-zone" required>
-            <option value="America/New_York">Eastern (EST/EDT)</option>
-            <option value="America/Chicago">Central (CST/CDT)</option>
-            <option value="America/Denver">Mountain (MST/MDT)</option>
-            <option value="America/Los_Angeles">Pacific (PST/PDT)</option>
-          </select>
-
-          <button type="submit">Save Result</button>
+          <button type="submit">Add Game</button>
         </form>
-      </div>
+      </section>
 
-      <div class="view" id="stats-view" style="display:none;">
-        <h2>Your Game Statistics</h2>
-        <canvas id="gamesChart" width="400" height="200"></canvas>
-      </div>
+      <section id="stats-view" class="view" style="display:none;">
+        <h2>Statistics</h2>
+        <canvas id="statsChart"></canvas>
+        <canvas id="gamesChart"></canvas>
+      </section>
 
-      <div class="view" id="location-view" style="display:none;">
-        <h2>Find Nearby Pool Halls</h2>
-        <input id="location-input" type="text" placeholder="Enter ZIP code or address" />
-        <button id="find-halls">Find Halls</button>
-        <div id="map"></div>
-      </div>
+      <section id="map-view" class="view" style="display:none;">
+        <h2>Nearby Pool Halls</h2>
+        <input id="map-location" placeholder="Enter your city or ZIP" />
+        <button onclick="initMap()">Find</button>
+        <div id="map" style="height: 400px; margin-top: 1rem;"></div>
+      </section>
     </div>
   </div>
   <script src="script.js"></script>
