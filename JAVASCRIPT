@@ -204,4 +204,7 @@ window.onload = () => {
     user = JSON.parse(localStorage.getItem(`user-${email}`));
     initApp();
   }
+  const loginMusic = new Audio("https://vgmsite.com/soundtracks/wwf-super-wrestlemania-snes/hyynklsx/09%20Sid%20Justice.mp3");
+loginMusic.volume = 0.5; // Optional: Adjust volume
+
 };
