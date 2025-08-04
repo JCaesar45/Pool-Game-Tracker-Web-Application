@@ -1,4 +1,5 @@
-```# Pool Game Tracker Web Application
+```
+# Pool Game Tracker Web Application
 
 A simple web app to help pool players record game results, track their statistics, find nearby pool halls, and manage user profiles. Built with HTML, CSS, JavaScript, Chart.js, and Google Maps API for location services. User data is stored locally for demo purposes.
 
