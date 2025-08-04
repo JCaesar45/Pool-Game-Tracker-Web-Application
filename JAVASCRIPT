@@ -1,10 +1,22 @@
 let user = null;
+let bgMusic = new Audio("https://vgmsite.com/soundtracks/wwf-super-wrestlemania-snes/hyynklsx/09%20Sid%20Justice.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
+let isMuted = false;
+
+function toggleMute() {
+  isMuted = !isMuted;
+  bgMusic.muted = isMuted;
+  document.getElementById('mute-btn').innerText = isMuted ? '🔇' : '🔊';
+}
 
 function toggleAuth(section) {
-  document.getElementById('register').style.display = 'none';
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('recovery').style.display = 'none';
-  document.getElementById(section).style.display = 'block';
+  ['register', 'login', 'recovery'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const el = document.getElementById(section);
+  if (el) el.style.display = 'block';
 }
 
 function register() {
@@ -63,56 +75,91 @@ function recover() {
 
 function logout() {
   localStorage.removeItem('loggedIn');
-  location.reload();
+  user = null;
+
+  // Hide app, show auth (login) section
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth').style.display = 'block';
+
+  // Show login form on logout
+  toggleAuth('login');
 }
 
 function initApp() {
   document.getElementById('auth').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('dashboard-view').classList.add('active');
+
+  // Show dashboard view by default
+  switchView('dashboard');
+
   document.getElementById('user-welcome').innerText = `Welcome, ${user.username}!`;
+
   loadUserData();
+
+  // Attach event listeners for nav buttons
+  document.getElementById('btn-dashboard').onclick = () => switchView('dashboard');
+  document.getElementById('btn-record').onclick = () => switchView('record');
+  document.getElementById('btn-stats').onclick = () => {
+    switchView('stats');
+    updateStatsChart();
+    updateGamesChart();
+  };
+  document.getElementById('btn-map').onclick = () => switchView('map');
+
+  document.getElementById('mute-btn').onclick = toggleMute;
+  document.getElementById('logout-btn').onclick = logout;
+
+  bgMusic.play().catch(() => {});
 }
 
-document.querySelectorAll('.nav button').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(`${btn.dataset.view}-view`).classList.add('active');
-    if (btn.dataset.view === 'stats') {
-      updateStatsChart();
-      updateGamesChart();
-    }
-  };
-});
+function switchView(viewName) {
+  document.querySelectorAll('.view').forEach(view => {
+    view.style.display = 'none';
+  });
+  const view = document.getElementById(`${viewName}-view`);
+  if (view) view.style.display = 'block';
+}
 
 function getUserData() {
   const stored = localStorage.getItem(`user-${user.email}`);
-  return JSON.parse(stored);
+  return stored ? JSON.parse(stored) : null;
 }
 
 function saveUserData(data) {
   localStorage.setItem(`user-${user.email}`, JSON.stringify(data));
+  user = data;
 }
 
 function loadUserData() {
   const list = document.getElementById('game-list');
   list.innerHTML = '';
+  if (!user.games.length) {
+    list.textContent = 'No games recorded yet.';
+    return;
+  }
   user.games.forEach(game => {
     const li = document.createElement('li');
-    li.textContent = `${game.opponent} | ${game.gameType} | Race to ${game.raceTo} | ${game.won ? 'Win' : 'Loss'} | ${game.date}`;
+    li.textContent = `${game.opponent} | ${game.gameType} | Race to ${game.raceTo} | ${game.won ? 'Win' : 'Loss'} | ${game.date} | Final Score: ${game.yourScore} - ${game.opponentScore}`;
     list.appendChild(li);
   });
 }
 
 document.getElementById('game-form').onsubmit = e => {
   e.preventDefault();
+
+  const yourScore = parseInt(document.getElementById('yourScore').value);
+  const opponentScore = parseInt(document.getElementById('opponentScore').value);
+
   const game = {
     opponent: document.getElementById('opponent').value,
     gameType: document.getElementById('gameType').value,
     raceTo: parseInt(document.getElementById('raceTo').value),
     date: document.getElementById('dateTime').value,
     won: document.getElementById('won').value === 'true',
+    yourScore: yourScore,
+    opponentScore: opponentScore,
   };
+
   user.games.push(game);
   if (game.won) user.stats.wins++;
   else user.stats.losses++;
@@ -197,14 +244,12 @@ function initMap() {
   });
 }
 
-// Auto-login
 window.onload = () => {
   const email = localStorage.getItem('loggedIn');
   if (email && localStorage.getItem(`user-${email}`)) {
     user = JSON.parse(localStorage.getItem(`user-${email}`));
     initApp();
+  } else {
+    toggleAuth('register');
   }
-  const loginMusic = new Audio("https://vgmsite.com/soundtracks/wwf-super-wrestlemania-snes/hyynklsx/09%20Sid%20Justice.mp3");
-loginMusic.volume = 0.5; // Optional: Adjust volume
-
 };
