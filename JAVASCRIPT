@@ -1,221 +1,207 @@
-let statsChart = null;
-let gamesChart = null;
 let user = null;
 
-function saveUserData(userObj) {
-  localStorage.setItem('user', JSON.stringify(userObj));
-}
-function getUserData() {
-  const data = localStorage.getItem('user');
-  return data ? JSON.parse(data) : null;
-}
-function clearUserData() {
-  localStorage.removeItem('user');
+function toggleAuth(section) {
+  document.getElementById('register').style.display = 'none';
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('recovery').style.display = 'none';
+  document.getElementById(section).style.display = 'block';
 }
 
-// Auth button handlers
-document.getElementById('show-login').onclick = () => {
-  document.getElementById('auth-forms').style.display = 'block';
-  document.getElementById('login-form').style.display = 'block';
-  document.getElementById('register-form').style.display = 'none';
-};
-document.getElementById('show-register').onclick = () => {
-  document.getElementById('auth-forms').style.display = 'block';
-  document.getElementById('login-form').style.display = 'none';
-  document.getElementById('register-form').style.display = 'block';
-};
+function register() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const security = document.getElementById('reg-security').value.trim();
 
-// Register
-document.getElementById('register-form').onsubmit = e => {
-  e.preventDefault();
-  const username = document.getElementById('register-username').value.trim();
-  if (!username) return alert('Enter username');
-  user = {
-    username,
-    stats: { wins: 0, losses: 0, total: 0 },
-    games: []
-  };
-  saveUserData(user);
-  startApp(username);
-  document.getElementById('auth-forms').style.display = 'none';
-};
-
-// Login
-document.getElementById('login-form').onsubmit = e => {
-  e.preventDefault();
-  const username = document.getElementById('login-username').value.trim();
-  const data = getUserData();
-  if (data && data.username === username) {
-    user = data;
-    startApp(username);
-    document.getElementById('auth-forms').style.display = 'none';
-  } else {
-    alert('User not found, please register.');
-  }
-};
-
-function startApp(username) {
-  document.getElementById('app').style.display = 'block';
-  document.querySelector('.header h1').innerText = `Welcome, ${username}`;
-  document.getElementById('auth-section').style.display = 'none';
-  showView('dashboard');
-  document.getElementById('user-name').innerText = username;
-  loadUserData();
-}
-
-// Nav view switching
-document.querySelectorAll('.nav button').forEach(btn => {
-  btn.onclick = () => {
-    showView(btn.dataset.view);
-  };
-});
-
-function showView(viewId) {
-  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-  const view = document.getElementById(viewId + '-view');
-  if (view) view.style.display = 'block';
-
-  if (viewId === 'dashboard') updateStatsChart();
-  else if (viewId === 'stats') updateGamesChart();
-}
-
-function loadUserData() {
-  if (user && user.stats) {
-    updateStatsChart();
-    updateGamesChart();
-  }
-}
-
-document.getElementById('logout').onclick = () => {
-  clearUserData();
-  location.reload();
-};
-
-document.getElementById('game-form').onsubmit = e => {
-  e.preventDefault();
-  const opponent = document.getElementById('opponent').value.trim();
-  const won = document.getElementById('won').value === 'true';
-  const gameType = document.getElementById('game-type').value;
-  const raceTo = parseInt(document.getElementById('race-to').value, 10);
-  const datetimeLocal = document.getElementById('game-datetime').value;
-  const timeZone = document.getElementById('time-zone').value;
-
-  if (!opponent || !datetimeLocal) {
-    alert('Please fill all fields.');
+  if (localStorage.getItem(`user-${email}`)) {
+    alert('Email already registered.');
     return;
   }
 
-  const dateObj = new Date(datetimeLocal);
-  const isoString = dateObj.toISOString();
+  const newUser = {
+    username,
+    email,
+    password,
+    security,
+    stats: { wins: 0, losses: 0, total: 0 },
+    games: [],
+  };
 
-  user.games.push({ opponent, won, gameType, raceTo, dateTime: isoString, timeZone });
-  if (won) user.stats.wins++;
+  localStorage.setItem(`user-${email}`, JSON.stringify(newUser));
+  alert('Registered successfully!');
+  toggleAuth('login');
+}
+
+function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  const stored = localStorage.getItem(`user-${email}`);
+  if (!stored) return alert('No account found.');
+
+  const userData = JSON.parse(stored);
+  if (userData.password !== password) return alert('Incorrect password.');
+
+  localStorage.setItem('loggedIn', email);
+  user = userData;
+  initApp();
+}
+
+function recover() {
+  const email = document.getElementById('recover-email').value.trim();
+  const security = document.getElementById('recover-security').value.trim();
+  const stored = localStorage.getItem(`user-${email}`);
+  if (!stored) return alert('No account found.');
+
+  const userData = JSON.parse(stored);
+  if (userData.security.toLowerCase() === security.toLowerCase()) {
+    alert(`Username: ${userData.username}\nPassword: ${userData.password}`);
+  } else {
+    alert('Incorrect recovery answer.');
+  }
+}
+
+function logout() {
+  localStorage.removeItem('loggedIn');
+  location.reload();
+}
+
+function initApp() {
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('dashboard-view').classList.add('active');
+  document.getElementById('user-welcome').innerText = `Welcome, ${user.username}!`;
+  loadUserData();
+}
+
+document.querySelectorAll('.nav button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(`${btn.dataset.view}-view`).classList.add('active');
+    if (btn.dataset.view === 'stats') {
+      updateStatsChart();
+      updateGamesChart();
+    }
+  };
+});
+
+function getUserData() {
+  const stored = localStorage.getItem(`user-${user.email}`);
+  return JSON.parse(stored);
+}
+
+function saveUserData(data) {
+  localStorage.setItem(`user-${user.email}`, JSON.stringify(data));
+}
+
+function loadUserData() {
+  const list = document.getElementById('game-list');
+  list.innerHTML = '';
+  user.games.forEach(game => {
+    const li = document.createElement('li');
+    li.textContent = `${game.opponent} | ${game.gameType} | Race to ${game.raceTo} | ${game.won ? 'Win' : 'Loss'} | ${game.date}`;
+    list.appendChild(li);
+  });
+}
+
+document.getElementById('game-form').onsubmit = e => {
+  e.preventDefault();
+  const game = {
+    opponent: document.getElementById('opponent').value,
+    gameType: document.getElementById('gameType').value,
+    raceTo: parseInt(document.getElementById('raceTo').value),
+    date: document.getElementById('dateTime').value,
+    won: document.getElementById('won').value === 'true',
+  };
+  user.games.push(game);
+  if (game.won) user.stats.wins++;
   else user.stats.losses++;
   user.stats.total++;
   saveUserData(user);
-  alert('Game recorded!');
   loadUserData();
-  document.getElementById('game-form').reset();
+  e.target.reset();
 };
 
-function updateStatsChart() {
-  const ctx = document.getElementById('statsChart').getContext('2d');
-  if (statsChart) statsChart.destroy();
-  statsChart = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: ['Wins', 'Losses'],
-      datasets: [{
-        data: [user.stats.wins, user.stats.losses],
-        backgroundColor: ['#4caf50', '#f44336']
-      }]
-    },
-    options: { responsive: true }
-  });
-}
-
-function updateGamesChart() {
-  const ctx = document.getElementById('gamesChart').getContext('2d');
-  if (gamesChart) gamesChart.destroy();
-  const total = user.stats.total;
-  const winPercent = total ? (user.stats.wins / total) * 100 : 0;
-  gamesChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Win %'],
-      datasets: [{
-        label: 'Winning Percentage',
-        data: [winPercent],
-        backgroundColor: ['#4caf50']
-      }]
-    },
-    options: {
-      scales: { y: { beginAtZero: true, max: 100 } }
-    }
-  });
-}
-
-// Reset & Load buttons
 document.getElementById('reset-data').onclick = () => {
-  if (confirm('Are you sure you want to reset all records?')) {
+  if (confirm('Reset all records?')) {
     user.stats = { wins: 0, losses: 0, total: 0 };
     user.games = [];
     saveUserData(user);
     loadUserData();
   }
 };
+
 document.getElementById('load-data').onclick = () => {
   user = getUserData();
   loadUserData();
 };
 
-// Find halls
-document.getElementById('find-halls').onclick = () => {
-  const input = document.getElementById('location-input').value.trim();
-  if (!input) return alert('Enter ZIP code or address');
-  geocodeLocation(input);
-};
+function updateStatsChart() {
+  const ctx = document.getElementById('statsChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Wins', 'Losses'],
+      datasets: [{
+        data: [user.stats.wins, user.stats.losses],
+        backgroundColor: ['green', 'red']
+      }]
+    }
+  });
+}
 
-function geocodeLocation(input) {
+function updateGamesChart() {
+  const ctx = document.getElementById('gamesChart').getContext('2d');
+  const total = user.stats.total || 1;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Win %'],
+      datasets: [{
+        label: 'Win %',
+        data: [((user.stats.wins / total) * 100).toFixed(1)],
+        backgroundColor: 'blue'
+      }]
+    }
+  });
+}
+
+function initMap() {
+  const loc = document.getElementById('map-location').value;
   const geocoder = new google.maps.Geocoder();
-  geocoder.geocode({ address: input }, (results, status) => {
-    if (status === 'OK' && results[0]) {
-      const location = results[0].geometry.location;
-      initMap(location);
+  geocoder.geocode({ address: loc }, (res, status) => {
+    if (status === 'OK') {
+      const map = new google.maps.Map(document.getElementById('map'), {
+        center: res[0].geometry.location,
+        zoom: 12
+      });
+      const service = new google.maps.places.PlacesService(map);
+      service.nearbySearch({
+        location: res[0].geometry.location,
+        radius: 5000,
+        keyword: 'pool hall'
+      }, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          results.forEach(place => {
+            new google.maps.Marker({
+              map,
+              position: place.geometry.location,
+              title: place.name
+            });
+          });
+        }
+      });
     } else {
       alert('Geocode failed: ' + status);
     }
   });
 }
 
-let map;
-function initMap(center) {
-  if (!map) {
-    map = new google.maps.Map(document.getElementById('map'), {
-      zoom: 14,
-      center: center
-    });
-  } else {
-    map.setCenter(center);
+// Auto-login
+window.onload = () => {
+  const email = localStorage.getItem('loggedIn');
+  if (email && localStorage.getItem(`user-${email}`)) {
+    user = JSON.parse(localStorage.getItem(`user-${email}`));
+    initApp();
   }
-  const service = new google.maps.places.PlacesService(map);
-  service.nearbySearch({ location: center, radius: 2000, keyword: 'pool hall' }, (results, status) => {
-    if (status === google.maps.places.PlacesServiceStatus.OK) {
-      results.forEach(place => {
-        new google.maps.Marker({
-          position: place.geometry.location,
-          map: map,
-          title: place.name
-        });
-      });
-    } else {
-      alert('Places search failed: ' + status);
-    }
-  });
-}
-
-if (getUserData()) {
-  user = getUserData();
-  startApp(user.username);
-  loadUserData();
-}
+};
