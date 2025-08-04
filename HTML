@@ -28,7 +28,7 @@
         <input id="login-password" type="password" placeholder="Password" required/>
         <button onclick="login()">Login</button>
         <p><a onclick="toggleAuth('register')">Create Account</a></p>
-        <p><a onclick="showRecovery()">Forgot Login Info?</a></p>
+        <p><a onclick="toggleAuth('recovery')">Forgot Login Info?</a></p>
       </div>
 
       <div id="recovery" style="display:none;">
@@ -42,11 +42,12 @@
 
     <div id="app" style="display:none;">
       <nav class="nav">
-        <button data-view="dashboard">Dashboard</button>
-        <button data-view="record">Record Game</button>
-        <button data-view="stats">Statistics</button>
-        <button data-view="map">Find Pool Halls</button>
-        <button onclick="logout()">Logout</button>
+        <button id="btn-dashboard" data-view="dashboard">Dashboard</button>
+        <button id="btn-record" data-view="record">Record Game</button>
+        <button id="btn-stats" data-view="stats">Statistics</button>
+        <button id="btn-map" data-view="map">Find Pool Halls</button>
+        <button onclick="toggleMute()" id="mute-btn">🔊</button>
+        <button onclick="logout()" id="logout-btn">Logout</button>
       </nav>
 
       <section id="dashboard-view" class="view">
@@ -69,6 +70,11 @@
             <option value="true">Yes</option>
             <option value="false">No</option>
           </select>
+
+          <!-- Final score inputs -->
+          <input id="yourScore" type="number" placeholder="Your Final Score" required min="0" />
+          <input id="opponentScore" type="number" placeholder="Opponent's Final Score" required min="0" />
+
           <button type="submit">Add Game</button>
         </form>
       </section>
